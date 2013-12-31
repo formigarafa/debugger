@@ -71,6 +71,28 @@ SRC
       $defs << "-DHAVE_RB_ISEQ_COMPILE_ON_BASE  -DVM_DEBUG_BP_CHECK -DHAVE_RB_CONTROL_FRAME_T_EP -DHAVE_RB_ISEQ_T_LOCATION -DHAVE_RB_ISEQ_T_LINE_INFO_SIZE "
     end
   }
+elsif RUBY_VERSION == '2.1.0'
+  lambda {
+    iseqs = %w[vm_core.h iseq.h]
+    begin
+      have_struct_member("rb_method_entry_t", "called_id", "method.h") or
+          have_struct_member("rb_control_frame_t", "method_id", "method.h")
+    end and
+        have_header("vm_core.h") and have_header("iseq.h") and have_header("insns.inc") and
+        have_header("insns_info.inc") and have_header("eval_intern.h") or return(false)
+    have_type("struct iseq_line_info_entry", iseqs) or
+        have_type("struct iseq_insn_info_entry", iseqs) or
+        return(false)
+    if checking_for(checking_message("if rb_iseq_compile_with_option was added an argument filepath")) do
+      try_compile(<<SRC)
+#include <ruby.h>
+#include "vm_core.h"
+extern VALUE rb_iseq_new_main(NODE *node, VALUE filename, VALUE filepath);
+SRC
+    end
+      $defs << "-DHAVE_RB_ISEQ_COMPILE_ON_BASE  -DVM_DEBUG_BP_CHECK -DHAVE_RB_CONTROL_FRAME_T_EP -DHAVE_RB_ISEQ_T_LOCATION -DHAVE_RB_ISEQ_T_LINE_INFO_SIZE "
+    end
+  }
 else
   STDERR.puts "Ruby version #{RUBY_VERSION} is not supported."
   exit(1)
